@@ -20,11 +20,11 @@ The project focuses heavily on backend development, authentication systems, data
 
 * Advanced product search functionality
 * Complete online shopping experience:
-  Shopping cart
-  Order placement
-  Order tracking
-  Orders history
-  Order cancellation
+  - Shopping cart
+  - Order placement
+  - Order tracking
+  - Orders history
+  - Order cancellation
 * Product categories and brand filtering system
 * Browse all products with dynamic filters
 * Pharmacy products organized by categories and brands

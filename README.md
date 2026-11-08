@@ -1,10 +1,10 @@
 # 💻 About This Project
 
 [Complete Guide | Run this project on your computer](https://github.com/danialafjeh/Run-My-Projects-Locally)<br>
-Projects are numbered in development order. Higher numbers represent newer projects that introduce new backend tools, concepts, and increasing levels of complexity throughout my learning journey.
 
-  
 # Pharmacy E-Commerce/Online Shop Website
+
+Complexity : Advanced
 
 A modern and fully functional online pharmacy e-commerce platform developed using **Django MVT architecture** for the backend and a stylish responsive frontend built with **HTML, CSS, SCSS, and JavaScript**. (Because my specialization is backend development, the UI is based on a Bootstrap template from templatemo.com to achieve a neat, responsive design.)
 

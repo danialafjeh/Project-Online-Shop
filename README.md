@@ -10,11 +10,7 @@ A modern and fully functional online pharmacy e-commerce platform developed usin
 
 The project focuses heavily on backend development, authentication systems, database management, and role-based access control while also providing a clean and modern user interface. so frontend is made with customized and ready made template.
 
-‼️ NOTE : This is a portfolio project to showing my abilities and it's not a real deployed project. so all users and database are also exactly available.
-
-‼️ NOTE : All information saved in database are just for examples and completely fake.
-
-‼️ NOTE : The language of the website is completely in Persian.
+‼️ NOTE : ِDemo/ sample information of users and database are also exactly available becuse of SQlite3 DB file.
 
 ## Features
 

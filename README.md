@@ -6,7 +6,7 @@
 
 Complexity : Advanced
 
-A modern and fully functional online pharmacy e-commerce platform developed using **Django MVT architecture** for the backend and a stylish responsive frontend built with **HTML, CSS, SCSS, and JavaScript**. (Because my specialization is backend development, the UI is based on a Bootstrap template from templatemo.com to achieve a neat, responsive design.)
+A pharmacy e-commerce web application with frontend and backend developed using **Django MVT architecture** for the backend and a stylish responsive frontend built with **HTML, CSS, SCSS, and JavaScript**. (Because my specialization is backend development, the UI is based on a Bootstrap template from templatemo.com to achieve a neat, responsive design.)
 
 The project focuses heavily on backend development, authentication systems, database management, and role-based access control while also providing a clean and modern user interface. so frontend is made with customized and ready made template.
 

@@ -1,0 +1,45 @@
+services:
+  web:
+    build: .
+    container_name: pharmacy_onlineshop_app
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      SECRET_KEY: "demo-key"
+      REDIS_URL: "redis://redis:6379/1"
+
+    volumes:
+      - type: bind
+        source: ./db.sqlite3
+        target: /app/db.sqlite3
+        bind:
+          create_host_path: false
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: pharmacy_redis
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+    restart: unless-stopped
+
+
+volumes:
+  redis_data:

@@ -1,0 +1,20 @@
+Danial Pharmacy Online Shop Project Django admin/website's manager login info
+You can use this two demo accounts to log into your profile dashboard in the onine shop website, 
+Or you can signup as new customer by yourself when you ran the project.
+Note : all emails and passwords are examples and fake.
+
+--------------------
+
+Manager :
+username = DanialAfjehManager
+email = Danial@example.com
+pass = Manager12345678
+
+-------------------
+
+Admin :
+first_name = DanialAd
+last_name = Afjeh4
+email = danialadmin@yahoo.com
+username = danyy_admin
+pass = Admin12345678

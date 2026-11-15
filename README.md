@@ -127,6 +127,7 @@ Administrators have access to a powerful management panel with advanced permissi
 * Redis
 * Docker
 * SQLite / Django ORM
+* Pillow
 * HTML5
 * CSS3
 * SCSS

@@ -1,109 +1,173 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse
+from django.db import transaction
 from cart.cart import Cart
-from main.models import CustomerDeliveryInfo, Product
+from main.models import CustomerDeliveryInfo
 from .models import Order, OrderItem
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 
-# Create your views here.
+
 
 def create_order(request):
     if request.method == 'POST':
-        cart = Cart(request)
-        cart_products = cart.get_prods()
-        quantity = cart.get_quants()
-        total = cart.get_total()
-
-        user_id = request.POST.get("user_delivery_id")
-        delivery_info = CustomerDeliveryInfo.objects.get(user__id = user_id)
-        user_account_info = User.objects.get(id = user_id)
 
         if request.user.is_authenticated:
-            user = request.user
-            new_order = Order(
-                user = user ,
-                full_name = delivery_info.full_name ,
-                phone = delivery_info.phone ,
-                email = user_account_info.email ,
-                delivery_address = delivery_info.address ,
-                amount_paid = total
+            cart = Cart(request)
+
+            cart_products = cart.get_prods()
+            quantity = cart.get_quants()
+
+            delivery_info = CustomerDeliveryInfo.objects.get(
+                user_id=request.user.id
             )
-            new_order.save()
 
-            order = get_object_or_404(Order, id = new_order.pk)
-            for product in cart_products:
-                prod = get_object_or_404(Product, id = product.id)
-                
-                if product.is_sale:
-                    price = product.sale_price
-                else:
-                    price = product.price
+            user = request.user
 
-                for k,v in quantity.items():
-                    if int(k) == product.id:
-                        new_item = OrderItem(
-                            order = order ,
-                            user = user ,
-                            products = prod ,
-                            quantity = v ,
-                            price = price
-                        )
-                        new_item.save()
-                
+            with transaction.atomic():
+
+                total = 0
+
+                new_order = Order.objects.create(
+                    user=user,
+                    full_name=delivery_info.full_name,
+                    phone=delivery_info.phone,
+                    email=user.email,
+                    delivery_address=delivery_info.address,
+                    amount_paid=0
+                )
+
+                for product in cart_products:
+
+                    product_quantity = quantity.get(
+                        str(product.id)
+                    )
+
+                    if product_quantity is None:
+                        continue
+
+                    if product.is_sale:
+                        price = product.sale_price
+                    else:
+                        price = product.price
+
+                    total += price * product_quantity
+
+                    OrderItem.objects.create(
+                        order=new_order,
+                        user=user,
+                        products=product,
+                        quantity=product_quantity,
+                        price=price
+                    )
+
+                new_order.amount_paid = total
+                new_order.save(update_fields=['amount_paid'])
+
+                CustomerDeliveryInfo.objects.filter(
+                    user_id=user.id
+                ).update(
+                    shopping_cart=""
+                )
+
+            # Session خارج از تراکنش دیتابیس است؛
+            # بنابراین فقط بعد از موفقیت تراکنش پاک می‌شود.
             for key in list(request.session.keys()):
                 if key == 'session_key':
                     del request.session[key]
-            
-            deliveryinfo = CustomerDeliveryInfo.objects.filter(user__id = user_id)
-            deliveryinfo.update(shopping_cart="")
 
             messages.success(request, ('سفارش شما با موفقیت ثبت شد و در انتطار پرداخت است'))
             messages.success(request, ('از بخش "پیگیری سفارشات من" در حساب کاربری خود اقدام به پرداخت مبلغ نمایید'))
+
             return redirect('home')
+
         else:
             messages.error(request, ('ابتدا وارد حساب خود شوید'))
+
             return redirect('home')
+
     else:
         messages.error(request, ('دسترسی به این صفحه امکان پذیر نمی باشد'))
+
         return redirect('home')
-    
+
+
 def orders_tracking(request):
     if request.user.is_authenticated:
-        active_orders = Order.objects.filter(user__id = request.user.id).exclude(status__in=['canceled','Delivered'])
-        canceled_orders = Order.objects.filter(user__id = request.user.id, status='canceled')
-        delivered_orders = Order.objects.filter(user__id = request.user.id, status='Delivered')
+
+        active_orders = Order.objects.filter(
+            user_id=request.user.id
+        ).exclude(
+            status__in=['canceled', 'Delivered']
+        )
+
+        canceled_orders = Order.objects.filter(
+            user_id=request.user.id,
+            status='canceled'
+        )
+
+        delivered_orders = Order.objects.filter(
+            user_id=request.user.id,
+            status='Delivered'
+        )
+
         info = {
-           'active_orders':active_orders , 
-           'canceled_orders':canceled_orders, 
-           'delivered_orders':delivered_orders
+            'active_orders': active_orders,
+            'canceled_orders': canceled_orders,
+            'delivered_orders': delivered_orders
         }
+
         return render(request, 'orders_tracking.html', info)
+
     else:
-        messages.error(request,('ابتدا باید وارد حساب کاربری خود شوید'))
+        messages.error(request, ('ابتدا باید وارد حساب کاربری خود شوید'))
+
         return redirect('home')
+
 
 def cancel_order(request, order_id):
     if request.user.is_authenticated:
-        order = get_object_or_404(Order, id=order_id)
+
+        order = get_object_or_404(
+            Order,
+            id=order_id,
+            user=request.user
+        )
+
         order.status = 'canceled'
         order.save()
+
         messages.success(request, ('سفارش شما با موفقیت لغو گردید'))
+
         return redirect('orders_tracking')
+
     else:
         messages.error(request, ('دسترسی به این صفحه مجاز نمی باشد'))
+
         return redirect('home')
+
 
 def order_details(request, pk):
     if request.user.is_authenticated:
-        order = Order.objects.get(id = pk)
-        order_items = OrderItem.objects.filter(order__id = pk)
+
+        order = get_object_or_404(
+            Order,
+            id=pk,
+            user=request.user
+        )
+
+        order_items = OrderItem.objects.filter(
+            order_id=pk
+        ).select_related(
+            'products'
+        )
+
         info = {
-            'order':order , 
-            'order_items':order_items
+            'order': order,
+            'order_items': order_items
         }
+
         return render(request, 'order_details.html', info)
+
     else:
         messages.error(request, ('ابتدا باید وارد حساب کاربری خود شوید'))
+
         return redirect('home')

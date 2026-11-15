@@ -1,4 +1,7 @@
+import json
 from main.models import Product, CustomerDeliveryInfo
+
+
 
 class Cart:
     def __init__(self, request):
@@ -6,86 +9,83 @@ class Cart:
         self.request = request
 
         cart = self.session.get('session_key')
-        if 'session_key' not in request.session :
+
+        if 'session_key' not in self.session:
             cart = self.session['session_key'] = {}
-        
+
         self.cart = cart
 
-    def add(self,product,quantity):
+    def _save_cart(self):
+        self.session.modified = True
+
+        if self.request.user.is_authenticated:
+            CustomerDeliveryInfo.objects.filter(
+                user_id=self.request.user.id
+            ).update(
+                shopping_cart=json.dumps(self.cart)
+            )
+
+    def add(self, product, quantity):
         product_id = str(product.id)
         product_qty = str(quantity)
 
-        if product_id in self.cart:
-            pass
-        else:
-            self.cart[product_id] = int(product_qty)   
-            
-        self.session.modified = True
+        if product_id not in self.cart:
+            self.cart[product_id] = int(product_qty)
 
-        if self.request.user.is_authenticated:
-            current_user = CustomerDeliveryInfo.objects.filter(user__id = self.request.user.id)
-            db_cart = str(self.cart).replace('\'','\"')
+        self._save_cart()
 
-            current_user.update(shopping_cart = str(db_cart))
-
-    def db_add(self,product,quantity):
+    def db_add(self, product, quantity):
         product_id = str(product)
         product_qty = str(quantity)
 
-        if product_id in self.cart:
-            pass
-        else:
-            self.cart[product_id] = int(product_qty)   
-            
-        self.session.modified = True
+        if product_id not in self.cart:
+            self.cart[product_id] = int(product_qty)
 
-        if self.request.user.is_authenticated:
-            current_user = CustomerDeliveryInfo.objects.filter(user__id = self.request.user.id)
-            db_cart = str(self.cart).replace('\'','\"')
-
-            current_user.update(shopping_cart = str(db_cart))
+        self._save_cart()
 
     def delete(self, product):
         product_id = str(product)
+
         if product_id in self.cart:
             del self.cart[product_id]
-        
-        self.session.modified = True
 
-        if self.request.user.is_authenticated:
-            current_user = CustomerDeliveryInfo.objects.filter(user__id = self.request.user.id)
-            db_cart = str(self.cart).replace('\'','\"')
-
-            current_user.update(shopping_cart = str(db_cart))
+        self._save_cart()
 
     def __len__(self):
         return len(self.cart)
-    
+
     def get_prods(self):
         product_ids = self.cart.keys()
-        products = Product.objects.filter(id__in=product_ids)
+
+        products = Product.objects.filter(
+            id__in=product_ids
+        )
+
         return products
-    
+
     def get_quants(self):
-        quantities = self.cart
-        return quantities
-    
+        return self.cart
+
     def get_total(self):
-        # {'2':4 , '3':2}
         product_ids = self.cart.keys()
-        products = Product.objects.filter(id__in=product_ids)
 
-        total=0
-        for key,value in self.cart.items():
-            key = int(key)
-            for product in products:
-                if product.id == key:
-                    if product.is_sale:
-                        total = total + (product.sale_price * value)
-                    else:
-                        total = total + (product.price * value)
-        
+        products = Product.objects.filter(
+            id__in=product_ids
+        ).only(
+            'id',
+            'price',
+            'sale_price',
+            'is_sale'
+        )
+
+        total = 0
+
+        for product in products:
+            quantity = self.cart.get(str(product.id), 0)
+
+            if product.is_sale:
+                total += product.sale_price * quantity
+            else:
+                total += product.price * quantity
+
         return total
-
-    
-    

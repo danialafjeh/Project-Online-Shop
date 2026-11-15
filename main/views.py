@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
-from cart.cart import Cart
-import json
 from django.contrib import messages
 from django.db.models import Q
+from django.core.cache import cache
+from cart.cart import Cart
+import json
 from .models import (
     Product,
     PharmacyInfo,
@@ -18,14 +19,22 @@ from .forms import (
     DeliveryInfoForm
 )
 
+# Redis Cache Configuration
+CACHE_TTL = 60 * 15  # 15 minutes
 
 # Create your views here.
 
 def home(request):
-    sale_products = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(is_sale=True)
+    sale_products = cache.get_or_set(
+        'main:home:sale_products',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(is_sale=True)
+        ),
+        CACHE_TTL
+    )
 
     info = {'sale_prods': sale_products}
 
@@ -33,7 +42,11 @@ def home(request):
 
 
 def aboutus(request):
-    about_pharmacy = PharmacyInfo.objects.get(id=1)
+    about_pharmacy = cache.get_or_set(
+        'main:aboutus:pharmacy_info',
+        lambda: PharmacyInfo.objects.get(id=1),
+        CACHE_TTL
+    )
 
     info = {'information': about_pharmacy}
 
@@ -41,10 +54,16 @@ def aboutus(request):
 
 
 def active_sales(request):
-    sale_products = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(is_sale=True)
+    sale_products = cache.get_or_set(
+        'main:home:sale_products',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(is_sale=True)
+        ),
+        CACHE_TTL
+    )
 
     info = {'all_sales': sale_products}
 
@@ -52,10 +71,16 @@ def active_sales(request):
 
 
 def all_products(request):
-    all_prods = Product.objects.select_related(
-        'category',
-        'brand'
-    ).all()
+    all_prods = cache.get_or_set(
+        'main:products:all',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).all()
+        ),
+        CACHE_TTL
+    )
 
     info = {'all_prods': all_prods}
 
@@ -63,12 +88,22 @@ def all_products(request):
 
 
 def category_page(request):
-    all_cats = Category.objects.all()
+    all_cats = cache.get_or_set(
+        'main:categories:all',
+        lambda: list(Category.objects.all()),
+        CACHE_TTL
+    )
 
-    default_prods = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(category__id=1)
+    default_prods = cache.get_or_set(
+        'main:categories:default_products',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(category__id=1)
+        ),
+        CACHE_TTL
+    )
 
     info = {
         'categories': all_cats,
@@ -81,14 +116,28 @@ def category_page(request):
 def category_selection(request, cat):
     catname = cat.replace("-", " ")
 
-    selected_cat = Category.objects.get(name=catname)
+    selected_cat = cache.get_or_set(
+        f'main:categories:selected:{catname}',
+        lambda: Category.objects.get(name=catname),
+        CACHE_TTL
+    )
 
-    products = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(category=selected_cat)
+    products = cache.get_or_set(
+        f'main:categories:products:{selected_cat.id}',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(category=selected_cat)
+        ),
+        CACHE_TTL
+    )
 
-    all_cats = Category.objects.all()
+    all_cats = cache.get_or_set(
+        'main:categories:all',
+        lambda: list(Category.objects.all()),
+        CACHE_TTL
+    )
 
     info = {
         'selected_category': selected_cat,
@@ -100,12 +149,22 @@ def category_selection(request, cat):
 
 
 def brands_page(request):
-    all_brands = Brand.objects.all()
+    all_brands = cache.get_or_set(
+        'main:brands:all',
+        lambda: list(Brand.objects.all()),
+        CACHE_TTL
+    )
 
-    default_prods = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(brand__id=1)
+    default_prods = cache.get_or_set(
+        'main:brands:default_products',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(brand__id=1)
+        ),
+        CACHE_TTL
+    )
 
     info = {
         'brands': all_brands,
@@ -118,14 +177,28 @@ def brands_page(request):
 def brands_selection(request, brand):
     brandname = brand.replace("-", " ")
 
-    selected_brand = Brand.objects.get(name=brandname)
+    selected_brand = cache.get_or_set(
+        f'main:brands:selected:{brandname}',
+        lambda: Brand.objects.get(name=brandname),
+        CACHE_TTL
+    )
 
-    products = Product.objects.select_related(
-        'category',
-        'brand'
-    ).filter(brand=selected_brand)
+    products = cache.get_or_set(
+        f'main:brands:products:{selected_brand.id}',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).filter(brand=selected_brand)
+        ),
+        CACHE_TTL
+    )
 
-    all_brands = Brand.objects.all()
+    all_brands = cache.get_or_set(
+        'main:brands:all',
+        lambda: list(Brand.objects.all()),
+        CACHE_TTL
+    )
 
     info = {
         'selected_brand': selected_brand,
@@ -591,15 +664,25 @@ def show_deliveryinfo(request):
 
 
 def product_details(request, pk):
-    product = Product.objects.select_related(
-        'category',
-        'brand'
-    ).get(id=pk)
+    product = cache.get_or_set(
+        f'main:product:details:{pk}',
+        lambda: Product.objects.select_related(
+            'category',
+            'brand'
+        ).get(id=pk),
+        CACHE_TTL
+    )
 
-    suggested_products = Product.objects.select_related(
-        'category',
-        'brand'
-    ).exclude(id=product.id)
+    suggested_products = cache.get_or_set(
+        f'main:product:suggestions:{pk}',
+        lambda: list(
+            Product.objects.select_related(
+                'category',
+                'brand'
+            ).exclude(id=pk)
+        ),
+        CACHE_TTL
+    )
 
     info = {
         'product': product,

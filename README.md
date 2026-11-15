@@ -124,11 +124,13 @@ Administrators have access to a powerful management panel with advanced permissi
 ## Technologies Used
 
 * Django (MVT Architecture)
+* Redis
+* Docker
+* SQLite / Django ORM
 * HTML5
 * CSS3
 * SCSS
 * JavaScript
-* SQLite / Django ORM
 
 ## Project Purpose
 

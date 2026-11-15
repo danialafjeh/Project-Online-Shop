@@ -89,7 +89,7 @@ The project focuses heavily on backend development, authentication systems, data
 
 **Database Note 1 :** The application currently uses SQLite. Database operations requiring transactional consistency are handled through `transaction.atomic()`. Since the current order workflow does not include concurrent inventory deduction or real payment processing, row-level locking through `select_for_update()` is not required by the present business logic.
 
-**Database Note 2 :**The project uses SQLite as its database engine. Since SQLite is a file-based database, the database is maintained as a single file (`db.sqlite3`) within the repository and is included in version control.
+**Database Note 2 :** The project uses SQLite as its database engine. Since SQLite is a file-based database, the database is maintained as a single file (`db.sqlite3`) within the repository and is included in version control.
 
 This approach ensures that the application's initial data, including products, categories, brands, pharmacy information, and other store-related content, remains consistent across different environments. Whether the project is launched locally or through Docker, on any supported system, the same predefined store data is available without requiring a separate database setup or manual data population.
 
